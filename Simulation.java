@@ -6,6 +6,7 @@ public class Simulation {
         }
         catch (IndexOutOfBoundsException error) {
             HandlePropertyFile handler = new HandlePropertyFile();
+            System.out.println(handler.getStructures());
         }
     }
 }

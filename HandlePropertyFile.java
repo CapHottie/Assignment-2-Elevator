@@ -5,16 +5,22 @@ import java.util.Properties;
 
 public class HandlePropertyFile {
     public Properties properties;
-    public HandlePropertyFile() {
+    public HandlePropertyFile() throws Exception {
         this.properties =  new Properties();
-        default_setup(properties);
+        this.default_setup();
+        if (!valid_properties()) {
+            throw new Exception("Invalid properties");
+        }
     }
-    public HandlePropertyFile(String file) {
+    public HandlePropertyFile(String file) throws Exception {
         this.properties = new Properties();
-        default_setup(properties);
-        properties = init_properties(file);
+        this.default_setup();
+        init_properties(file);
+        if (!valid_properties()) {
+            throw new Exception("Invalid properties");
+        }
     }
-    public void default_setup(Properties properties){
+    public void default_setup(){
         //note for self: setProperty only accepts string arguments (even if the value is an int/float)
         properties.setProperty("structures", "linked");
         properties.setProperty("floors", "32");
@@ -26,26 +32,45 @@ public class HandlePropertyFile {
 
     /*Each line of the input file contains a KEY=VALUE pair
     * Input file will be passed in as args[0]*/
-    public Properties init_properties(String filePath) {
+    public void init_properties(String filePath) {
         try (FileInputStream propertyFile = new FileInputStream(filePath)) {
             properties.load(propertyFile);
-            return properties;
         }
         catch (FileNotFoundException error) {
             //Requirement specifies that property file may be missing. Default setup should be used.
-            return properties;
         }
         catch (IOException error){
             error.printStackTrace();
             System.exit(0);
-            return null;
         }
+    }
+
+    public boolean valid_properties() {
+        if(getStructures().compareTo("linked") != 0 && getStructures().compareTo("array") != 0) {
+            return false;
+        }
+        if (getFloors() < 2) {
+            return false;
+        }
+        if (getPassengers() < 0 || getPassengers() > 1.0) {
+            return false;
+        }
+        if (getElevators() < 1) {
+            return false;
+        }
+        if (getElevatorCapacity() < 1) {
+            return false;
+        }
+        if (getDuration() < 1) {
+            return false;
+        }
+        return true;
+
     }
 
     public String getStructures() {
         return properties.getProperty("structures");
     }
-
     public int getFloors() {
         return Integer.parseInt(properties.getProperty("floors"));
     }
