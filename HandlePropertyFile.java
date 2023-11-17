@@ -4,20 +4,16 @@ import java.io.IOException;
 import java.util.Properties;
 
 public class HandlePropertyFile {
-    public Properties properties;
-    public HandlePropertyFile() throws Exception {
-        this.properties =  new Properties();
-        this.default_setup();
-        if (!valid_properties()) {
-            throw new Exception("Invalid properties");
-        }
-    }
+    private Properties properties;
+
     public HandlePropertyFile(String file) throws Exception {
         this.properties = new Properties();
         this.default_setup();
-        init_properties(file);
-        if (!valid_properties()) {
-            throw new Exception("Invalid properties");
+        if (file != null) {
+            init_properties(file);
+            if (!valid_properties()) {
+                throw new Exception("Invalid properties");
+            }
         }
     }
     public void default_setup(){
@@ -46,7 +42,7 @@ public class HandlePropertyFile {
     }
 
     public boolean valid_properties() {
-        if(getStructures().compareTo("linked") != 0 && getStructures().compareTo("array") != 0) {
+            if(getStructures().compareTo("linked") != 0 && getStructures().compareTo("array") != 0) {
             return false;
         }
         if (getFloors() < 2) {
@@ -68,8 +64,15 @@ public class HandlePropertyFile {
 
     }
 
+    public Properties get_properties() {
+        return properties;
+    }
+
     public String getStructures() {
         return properties.getProperty("structures");
+    }
+    public boolean isLinked() {
+        return getStructures().compareTo("linked") == 0;
     }
     public int getFloors() {
         return Integer.parseInt(properties.getProperty("floors"));
