@@ -124,6 +124,7 @@ public class Simulation {
         Floor current = floors.get(0);
 
         for (int floor_number = 1; floor_number <= handler.get_floors(); floor_number++) {
+            current = floors.get(floor_number - 1);
             if (handler.get_passengers() >= randomGenerator.nextFloat()) {
                 Passenger newPassenger = new Passenger(floor_number, handler.get_floors(), getTickCount());
                 if (newPassenger.goingUp()) {
@@ -134,7 +135,6 @@ public class Simulation {
                 }
                 return floor_number;
             }
-            current = floors.get(floor_number);
         }
         return 0;
     }

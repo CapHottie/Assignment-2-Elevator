@@ -39,28 +39,22 @@ public class Elevator {
         return null;
     }
 
-    //returns where elevator stopped
+    /* returns floor where elevator stopped
+    *  changes direction when top/bottom has been reached
+    * cannot travel more than 5 floors
+    * stops when destination reached or when there is an upload queue in that floor*/
     public int travel(int destination, List<Floor> floors) {
-        while (stop(floors.size()) && get_DistanceTraveled() < 5 && destination != get_CurrentFloor()) {
+        while (get_DistanceTraveled() < 5 || destination == get_CurrentFloor()) {
             if (direction()) {
                 currentFloor++;
                 distanceTraveled++;
-                if (!floors.get(get_CurrentFloor()).get_upload_requests(true).isEmpty()) {
-                    break;
-                }
-                else if (!floors.get(get_CurrentFloor()).get_upload_requests(false).isEmpty()) {
-                    break;
-                }
             }
             else {
                 currentFloor--;
                 distanceTraveled++;
-                if (!floors.get(get_CurrentFloor()).get_upload_requests(true).isEmpty()) {
-                    break;
-                }
-                else if (!floors.get(get_CurrentFloor()).get_upload_requests(false).isEmpty()) {
-                    break;
-                }
+            }
+            if (stop(floors.size())) {
+                break;
             }
         }
         reset_distance();
@@ -68,11 +62,11 @@ public class Elevator {
     }
 
     private boolean stop(int topFloor) {
-        if (get_CurrentFloor() == 1 || get_CurrentFloor() == topFloor){
+        if ((!direction() && get_CurrentFloor() == 1 ) || (direction() && get_CurrentFloor() == topFloor)){
             changeDirection();
-            return false;
+            return true;
         }
-        return true;
+        return false;
     }
 
     public int standby(List<Floor> floors) {
