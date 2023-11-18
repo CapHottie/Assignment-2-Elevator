@@ -41,7 +41,7 @@ public class Elevator {
 
     //returns where elevator stopped
     public int travel(int destination, List<Floor> floors) {
-        while (get_DistanceTraveled() < 5 && destination != get_CurrentFloor() && stop(floors.size())) {
+        while (stop(floors.size()) && get_DistanceTraveled() < 5 && destination != get_CurrentFloor()) {
             if (direction()) {
                 currentFloor++;
                 distanceTraveled++;

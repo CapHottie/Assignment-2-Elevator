@@ -29,7 +29,7 @@ public class Simulation {
         List<Floor> floors = generate_floors(handler);
         List<Elevator> elevators = generate_elevators(handler);
 
-        ListIterator<Elevator> elevatorIterator = elevators.listIterator(0);
+        ListIterator<Elevator> elevatorIterator = elevators.listIterator(1);
         Elevator currentElevator = elevators.get(0);
         Floor currentFloor = floors.get(currentElevator.get_CurrentFloor() - 1);
 
@@ -47,7 +47,7 @@ public class Simulation {
         while (getTickCount() <= getDuration()) {
             int spawnCheck = spawn(handler, floors);
             while (currentElevator != null){//triggers if a passenger spawned
-                currentFloor = floors.get(currentElevator.get_CurrentFloor() - 1);
+                currentFloor = floors.get(currentElevator.get_CurrentFloor() - 1);//where given elevator is
                 while (true) {//loops through elevator's PQ to unload all applicable passengers
                     Passenger passenger_served = currentElevator.unload();
                     if (passenger_served == null) {
@@ -121,21 +121,20 @@ public class Simulation {
 
     public int spawn(HandlePropertyFile handler, List<Floor> floors) { //return if spawn was successful, 0 if no new passengers
         Random randomGenerator = new Random();
-        ListIterator<Floor> iterator = floors.listIterator();
         Floor current = floors.get(0);
 
-        for (int floor_number = 1; floor_number < handler.get_floors(); floor_number++) {
+        for (int floor_number = 1; floor_number <= handler.get_floors(); floor_number++) {
             if (handler.get_passengers() >= randomGenerator.nextFloat()) {
                 Passenger newPassenger = new Passenger(floor_number, handler.get_floors(), getTickCount());
                 if (newPassenger.goingUp()) {
-                    current.get_upload_requests(true).add( newPassenger);
+                    current.get_upload_requests(true).add(newPassenger);
                 }
                 else {
                     current.get_upload_requests(false).add(newPassenger);
                 }
                 return floor_number;
             }
-            current = iterator.next();
+            current = floors.get(floor_number);
         }
         return 0;
     }
