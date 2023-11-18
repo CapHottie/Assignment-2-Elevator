@@ -4,27 +4,27 @@ public class Passenger {
     private boolean goingUp;
     private int startTime;
 
-    public Passenger(int current_floor, int max_floor, int tick_count) {
-        this.startTime = tick_count;
-        Random random_number = new Random();
+    public Passenger(int currentFloor, int maxFloor, int tickCount) {
+        this.startTime = tickCount;
+        Random randomNumber = new Random();
 
-        if (current_floor == max_floor) {
+        if (currentFloor == maxFloor) {
             this.goingUp = false;
         }
-        else if (current_floor == 1) {
+        else if (currentFloor == 1) {
             this.goingUp = true;
         }
         else {
-            this.goingUp = random_number.nextBoolean();
+            this.goingUp = randomNumber.nextBoolean();
         }
         int range;
         if (goingUp) {
-            range = (max_floor - current_floor + 1) + 1;
-            this.destination = current_floor + 1 +(int)(range * Math.random()) ;
+            range = (maxFloor - currentFloor + 1);
+            this.destination = randomNumber.nextInt(range) + currentFloor + 1;
         }
         else {
-            range = current_floor + 1;
-            this.destination = 1 + (int)(range * Math.random());
+            range = currentFloor + 1;
+            this.destination = randomNumber.nextInt(range) + 1;
         }
     }
 

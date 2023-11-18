@@ -9,18 +9,9 @@ public class main {
         catch (IndexOutOfBoundsException error) {
             filePath = null;
         }
-
         HandlePropertyFile handler = new HandlePropertyFile(filePath);
-        List<Floor> floors;
-
-        if (handler.getStructures().compareTo("linked") == 0) { //linked lists
-            floors = new LinkedList<>();
-        }
-        else {
-            floors = new ArrayList<>(handler.getFloors());
-        }
-
-
-
+        Simulation simulation = new Simulation(handler);
+        simulation.run(handler);
+        simulation.report();
     }
 }

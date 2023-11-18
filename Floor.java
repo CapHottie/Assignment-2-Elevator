@@ -5,16 +5,16 @@ public class Floor {
     private List<Passenger> UpRequest;
     private List<Passenger> DownRequest;
 
-    public Floor(HandlePropertyFile handler, int floor_number) {
-        this.floorNumber = floor_number;
+    public Floor(HandlePropertyFile handler, int floorNumber) {
+        this.floorNumber = floorNumber;
 
-        if(handler.isLinked()) {
+        if(handler.is_linked()) {
             UpRequest = new LinkedList<>();
             DownRequest = new LinkedList<>();
         }
         else {
-            UpRequest = new ArrayList<>();
-            DownRequest = new ArrayList<>();
+            UpRequest = new ArrayList<>(handler.get_floors());
+            DownRequest = new ArrayList<>(handler.get_floors());
         }
     }
 
@@ -22,10 +22,15 @@ public class Floor {
         return floorNumber;
     }
 
-    public List<Passenger> get_Q(boolean up) {
-        if (up) {
-            return UpRequest;
+    public List<Passenger> get_upload_requests(boolean up) {
+        try {
+            if (up) {
+                return UpRequest;
+            }
+            return DownRequest;
         }
-        return DownRequest;
+        catch (NullPointerException noPassengers) {
+            return null;
+        }
     }
 }

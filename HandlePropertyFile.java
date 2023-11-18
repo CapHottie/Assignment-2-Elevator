@@ -42,22 +42,22 @@ public class HandlePropertyFile {
     }
 
     public boolean valid_properties() {
-            if(getStructures().compareTo("linked") != 0 && getStructures().compareTo("array") != 0) {
+            if(get_structures().compareTo("linked") != 0 && get_structures().compareTo("array") != 0) {
             return false;
         }
-        if (getFloors() < 2) {
+        if (get_floors() < 2) {
             return false;
         }
-        if (getPassengers() < 0 || getPassengers() > 1.0) {
+        if (get_passengers() < 0 || get_passengers() > 1.0) {
             return false;
         }
-        if (getElevators() < 1) {
+        if (get_elevators() < 1) {
             return false;
         }
-        if (getElevatorCapacity() < 1) {
+        if (get_elevatorCapacity() < 1) {
             return false;
         }
-        if (getDuration() < 1) {
+        if (get_duration() < 1) {
             return false;
         }
         return true;
@@ -68,25 +68,25 @@ public class HandlePropertyFile {
         return properties;
     }
 
-    public String getStructures() {
+    public String get_structures() {
         return properties.getProperty("structures");
     }
-    public boolean isLinked() {
-        return getStructures().compareTo("linked") == 0;
+    public boolean is_linked() {
+        return get_structures().compareTo("linked") == 0;
     }
-    public int getFloors() {
+    public int get_floors() {
         return Integer.parseInt(properties.getProperty("floors"));
     }
-    public float getPassengers() {
+    public float get_passengers() {
         return Float.parseFloat(properties.getProperty("passengers"));
     }
-    public int getElevators() {
+    public int get_elevators() {
         return Integer.parseInt(properties.getProperty("elevators"));
     }
-    public int getElevatorCapacity() {
+    public int get_elevatorCapacity() {
         return Integer.parseInt(properties.getProperty("elevatorCapacity"));
     }
-    public int getDuration() {
+    public int get_duration() {
         return Integer.parseInt(properties.getProperty("duration"));
     }
 }

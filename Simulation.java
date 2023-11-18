@@ -1,120 +1,183 @@
 import java.util.*;
+import java.lang.Math;
 public class Simulation {
-    private int global_tick;
+    private int tickCount;
+
     private int elevatorCount;
+
     private int floorCount;
     private int duration;
-    private int longest_service;
-    private int shortest_service;
-    private List<Integer> service_record;
-
+    private int longestService;
+    private int shortestService;
+    private List<Integer> serviceRecord;
     public Simulation(HandlePropertyFile handler) {
-        this.global_tick = 0;
-        this.longest_service = Integer.MIN_VALUE;
-        this.shortest_service = Integer.MAX_VALUE;
-        if (handler.isLinked()) {
-            this.service_record = new LinkedList<>();
+        this.tickCount = 0;
+        this.longestService = Integer.MIN_VALUE;
+        this.shortestService = Integer.MAX_VALUE;
+        if (handler.is_linked()) {
+            this.serviceRecord = new LinkedList<>();
         }
         else {
-            this.service_record = new ArrayList<>();
+            this.serviceRecord = new ArrayList<>();
         }
-        this.elevatorCount = handler.getElevators();
-        this.floorCount = handler.getFloors();
-        this.duration = handler.getDuration();
+        this.elevatorCount = handler.get_elevators();
+        this.floorCount = handler.get_floors();
+        this.duration = handler.get_duration();
     }
 
     public void run(HandlePropertyFile handler) {
         List<Floor> floors = generate_floors(handler);
         List<Elevator> elevators = generate_elevators(handler);
 
-        Iterator<Floor> floorIterator = floors.listIterator(0);
-        Iterator<Elevator> elevatorIterator = elevators.listIterator(0);
-        Elevator current_elevator = elevators.get(0);
-        Floor current_floor = floors.get(0);
+        ListIterator<Elevator> elevatorIterator = elevators.listIterator(0);
+        Elevator currentElevator = elevators.get(0);
+        Floor currentFloor = floors.get(currentElevator.get_CurrentFloor());
 
-        while (global_tick <= duration) {
-            spawn(handler, floors);
+        /* 1.unload in current floor
+         * 2.load in current floor
+         * 3.check highest priority destination in current direction
+         * 4.check closest button pressed
+         * 5.travel to whichever is closest.
+         *   5a. if both are empty/null/0, change direction and go back to (1)
+         *   5b. if PQ in current direction is empty, default to button pressed request
+         *   5c. if there are no floor pressed button, default to unload request*/
+        int unloadRequest;
+        int loadRequest;
 
-            while (true) {
-                Passenger passenger_served = current_elevator.unload(current_floor);
-                if (passenger_served != null) {
-                    break;
+        while (getTickCount() <= getDuration()) {
+
+            while (currentElevator != null && spawn(handler, floorsDELETE)){//triggers if a passenger spawned
+                while (true) {//loops through elevator's PQ to unload all applicable passengers
+                    Passenger passenger_served = currentElevator.unload();
+                    if (passenger_served == null) {
+                        break;
+                    }
+                    end_service(passenger_served);
                 }
-                end_service(passenger_served);
+
+                currentElevator.load(currentFloor);
+
+                if (!currentElevator.check_requests() && button_pressed(floors, currentElevator) == 0) {
+                    currentElevator.changeDirection();
+                    continue;
+                }
+
+                unloadRequest = currentElevator.get_priority();
+
+                if (unloadRequest != 0) {
+                    currentFloor = floors.get(currentElevator.travel(unloadRequest, floors));
+                }
+
+
+                loadRequest = button_pressed(floors, currentElevator);//
+
+                if (unloadRequest != 0) {//there is a request from a passenger to be dropped off on a floor in the current direction
+                    if(loadRequest != 0) {//there is a request from a passenger on a floor to be picked up by this elevator (due to its current direction)
+                        currentFloor = floors.get(currentElevator.travel(currentElevator.closestFloor(loadRequest, unloadRequest), ));
+                    }
+                    else {//nobody needs to be picked up
+                        currentFloor = floors.get(currentElevator.travel(unloadRequest, ));
+                    }
+                }
+                else if (loadRequest != 0) {//elevator only has to pick someone up
+                    currentFloor = floors.get(currentElevator.travel(loadRequest, ));
+                }
+                else { //no outstanding requests. elevator waits for requests and changes direction to see if there are missing requests in that direction
+                    currentElevator.changeDirection();
+                }
+
+
+                try {//elevator has passenger, there may or may not be load requests
+                    unloadRequest = currentElevator.get_priority();
+                    loadRequest = button_pressed(floors, currentElevator);
+
+                    if (loadRequest == 0) { //no load requests
+                        currentFloor = floors.get(currentElevator.travel(Math.abs(unloadRequest - currentFloor.get_FloorNumber()), ));
+                    } else {
+                        currentFloor = floors.get(currentElevator.travel(Math.abs(currentElevator.closestFloor(unloadRequest, loadRequest) - currentFloor.get_FloorNumber()), ));
+                    }
+                } catch (NullPointerException noPassengers) {//no passengers in elevator that need to travel in the current direction AND someone pressed the button
+                    loadRequest = button_pressed(floors, currentElevator);
+                    currentFloor = floors.get(currentElevator.travel(Math.abs(loadRequest - currentFloor.get_FloorNumber()), ));
+                }
+                currentElevator = elevatorIterator.next();
+                currentFloor = floors.get(currentElevator.get_CurrentFloor());
             }
-
-            current_elevator.load(current_floor);
-
-            global_tick++;
+            tickCount++;
         }
     }
 
-    /* check if there are buttons pressed across all floors in the current direction
-    *  return the closes floor who has a passenger that needs to be picked up */
     private int button_pressed(List<Floor> floorList, Elevator elevator) {
-        int current_floor = elevator.getCurrent_floor();
-        Iterator<Floor> iterator = floorList.listIterator(current_floor);
-        Floor request = floorList.get(current_floor);
+        int current_floor = elevator.get_CurrentFloor();
+        ListIterator<Floor> iterator = floorList.listIterator(current_floor);
+        Floor request;
 
         if (elevator.direction()) {
             //look up
             while (iterator.hasNext()){
                 request = iterator.next();
+                if (!request.get_upload_requests(elevator.direction()).isEmpty()) {
+                    return request.get_FloorNumber();
+                }
             }
         }
+        else {
+            while (iterator.hasPrevious()){
+                request = iterator.previous();
+                if (!request.get_upload_requests(elevator.direction()).isEmpty()) {
+                    return request.get_FloorNumber();
+                }
+            }
+        }
+        return 0;
     }
 
-    public void spawn(HandlePropertyFile properties, List<Floor> floors) {
-        Random random_generator = new Random();
-        Iterator<Floor> iterator = floors.iterator();
+    public boolean spawn(HandlePropertyFile handler, List<Floor> floors) { //return if spawn was successful, 0 if no new passengers
+        Random randomGenerator = new Random();
+        ListIterator<Floor> iterator = floors.listIterator();
         Floor current = floors.get(0);
-        int floor_number = 1;
 
-        while(iterator.hasNext()) {
-            if (properties.getPassengers() < random_generator.nextFloat()) {
-                Passenger newPassenger = new Passenger(floor_number, floorCount, global_tick);
+        for (int floor_number = 1; floor_number <= handler.get_floors(); floor_number++) {
+            if (handler.get_passengers() >= randomGenerator.nextFloat()) {
+                Passenger newPassenger = new Passenger(floor_number, handler.get_floors(), getTickCount());
                 if (newPassenger.goingUp()) {
-                    current.get_Q(true).add(newPassenger);
+                    current.get_upload_requests(true).add(newPassenger);
                 }
                 else {
-                    current.get_Q(false).add(newPassenger);
+                    current.get_upload_requests(false).add(newPassenger);
                 }
-                current = iterator.next();
-                floor_number++;
+                return true;
             }
+            current = iterator.next();
         }
-        //current is on the top floor
-        if (properties.getPassengers() < random_generator.nextFloat()) {
-            Passenger newPassenger = new Passenger(floor_number, floorCount, global_tick);
-            //has to go down
-            current.get_Q(false).add(newPassenger);
-        }
+        return false;
     }
 
     public List<Floor> generate_floors(HandlePropertyFile handler) {
         List<Floor> floors;
-        if (handler.isLinked()) {
+        if (handler.is_linked()) {
             floors = new LinkedList<>();
         }
         else {
-            floors = new ArrayList<>(floorCount);
+            floors = new ArrayList<>(getFloorCount());
         }
-        for (int i = 0; i < floorCount; i++) {
+        for (int i = 0; i < getFloorCount(); i++) {
             Floor newFloor = new Floor(handler, i + 1);
             floors.add(newFloor);
         }
         return floors;
     }
-    
+
     public List<Elevator> generate_elevators(HandlePropertyFile handler) {
         List<Elevator> elevators;
-        if (handler.isLinked()) {
-            elevators = new LinkedList<Elevator>();
+
+        if (handler.is_linked()) {
+            elevators = new LinkedList<>();
         }
         else {
-            elevators = new ArrayList<>(elevatorCount);
+            elevators = new ArrayList<>(getElevatorCount());
         }
-        for (int i = 0; i < elevatorCount; i++) {
+        for (int i = 0; i < getElevatorCount(); i++) {
             Elevator newElevator = new Elevator(handler);
             elevators.add(newElevator);
         }
@@ -122,30 +185,49 @@ public class Simulation {
     }
 
     public void end_service(Passenger passenger_served) {//passenger is already polled from elevator PQ
-        Integer service_length = global_tick - passenger_served.get_startTime();
-        service_record.add(service_length);
-        if (service_length > longest_service) {
-            longest_service = service_length;
+        int service_length = getTickCount() - passenger_served.get_startTime();
+        serviceRecord.add(service_length);
+        if (service_length > longestService) {
+            longestService = service_length;
         }
-        if (service_length < shortest_service) {
-            shortest_service = service_length;
+        if (service_length < shortestService) {
+            shortestService = service_length;
         }
         passenger_served = null;
     }
 
+    /* check if there are buttons pressed across all floors in the current direction
+     *  return the closes floor who has a passenger that needs to be picked up
+     *  returns 0 by default if no requests*/
     private double average_service_length() {
-        double denominator = service_record.size();
+        double denominator = serviceRecord.size();
         double sum = 0;
-        while (!service_record.isEmpty()) {
-            sum += service_record.get(0);
-            service_record.remove(0);
+        while (!serviceRecord.isEmpty()) {
+            sum += serviceRecord.get(0);
+            serviceRecord.remove(0);
         }
         return sum / denominator;
     }
 
     public void report() {
         System.out.println("Average travel time: " + average_service_length() + " ticks");
-        System.out.println("Longest travel time: " + longest_service + " ticks");
-        System.out.println("Shortest travel time: " + shortest_service + " ticks");
+        System.out.println("Longest travel time: " + longestService + " ticks");
+        System.out.println("Shortest travel time: " + shortestService + " ticks");
+    }
+
+    public int getTickCount() {
+        return tickCount;
+    }
+
+    public int getElevatorCount() {
+        return elevatorCount;
+    }
+
+    public int getFloorCount() {
+        return floorCount;
+    }
+
+    public int getDuration() {
+        return duration;
     }
 }
