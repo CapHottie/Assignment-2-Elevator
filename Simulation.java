@@ -2,7 +2,6 @@ import java.util.*;
 import java.lang.Math;
 public class Simulation {
     private int tickCount;
-
     private int elevatorCount;
 
     private int floorCount;
@@ -55,6 +54,8 @@ public class Simulation {
                     }
                     end_service(passenger_served);
                 }
+
+                currentElevator.stop(getFloorCount());
 
                 currentElevator.load(currentFloor);
 

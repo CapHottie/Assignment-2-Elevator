@@ -61,7 +61,7 @@ public class Elevator {
         return get_CurrentFloor();
     }
 
-    private boolean stop(int topFloor) {
+    public boolean stop(int topFloor) {
         if ((!direction() && get_CurrentFloor() == 1 ) || (direction() && get_CurrentFloor() == topFloor)){
             changeDirection();
             return true;
