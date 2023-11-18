@@ -31,7 +31,7 @@ public class Simulation {
 
         ListIterator<Elevator> elevatorIterator = elevators.listIterator(0);
         Elevator currentElevator = elevators.get(0);
-        Floor currentFloor = floors.get(currentElevator.get_CurrentFloor());
+        Floor currentFloor = floors.get(currentElevator.get_CurrentFloor() - 1);
 
         /* 1.unload in current floor
          * 2.load in current floor
@@ -45,8 +45,9 @@ public class Simulation {
         int loadRequest;
 
         while (getTickCount() <= getDuration()) {
-
-            while (currentElevator != null && spawn(handler, floorsDELETE)){//triggers if a passenger spawned
+            int spawnCheck = spawn(handler, floors);
+            while (currentElevator != null){//triggers if a passenger spawned
+                currentFloor = floors.get(currentElevator.get_CurrentFloor() - 1);
                 while (true) {//loops through elevator's PQ to unload all applicable passengers
                     Passenger passenger_served = currentElevator.unload();
                     if (passenger_served == null) {
@@ -57,51 +58,30 @@ public class Simulation {
 
                 currentElevator.load(currentFloor);
 
-                if (!currentElevator.check_requests() && button_pressed(floors, currentElevator) == 0) {
-                    currentElevator.changeDirection();
-                    continue;
-                }
-
                 unloadRequest = currentElevator.get_priority();
+                loadRequest = button_pressed(floors, currentElevator);
 
-                if (unloadRequest != 0) {
-                    currentFloor = floors.get(currentElevator.travel(unloadRequest, floors));
-                }
-
-
-                loadRequest = button_pressed(floors, currentElevator);//
-
-                if (unloadRequest != 0) {//there is a request from a passenger to be dropped off on a floor in the current direction
-                    if(loadRequest != 0) {//there is a request from a passenger on a floor to be picked up by this elevator (due to its current direction)
-                        currentFloor = floors.get(currentElevator.travel(currentElevator.closestFloor(loadRequest, unloadRequest), ));
-                    }
-                    else {//nobody needs to be picked up
-                        currentFloor = floors.get(currentElevator.travel(unloadRequest, ));
-                    }
-                }
-                else if (loadRequest != 0) {//elevator only has to pick someone up
-                    currentFloor = floors.get(currentElevator.travel(loadRequest, ));
-                }
-                else { //no outstanding requests. elevator waits for requests and changes direction to see if there are missing requests in that direction
-                    currentElevator.changeDirection();
-                }
-
-
-                try {//elevator has passenger, there may or may not be load requests
-                    unloadRequest = currentElevator.get_priority();
-                    loadRequest = button_pressed(floors, currentElevator);
-
-                    if (loadRequest == 0) { //no load requests
-                        currentFloor = floors.get(currentElevator.travel(Math.abs(unloadRequest - currentFloor.get_FloorNumber()), ));
+                if (unloadRequest == 0) { //no passenger needs to be dropped off
+                    //someone needs to be picked up
+                    if (loadRequest == 0 || loadRequest == currentFloor.get_FloorNumber()) {//no upload requests
+                        currentFloor = floors.get(currentElevator.standby(floors) - 1);
                     } else {
-                        currentFloor = floors.get(currentElevator.travel(Math.abs(currentElevator.closestFloor(unloadRequest, loadRequest) - currentFloor.get_FloorNumber()), ));
+                        currentFloor = floors.get(currentElevator.travel(loadRequest, floors) - 1);
                     }
-                } catch (NullPointerException noPassengers) {//no passengers in elevator that need to travel in the current direction AND someone pressed the button
-                    loadRequest = button_pressed(floors, currentElevator);
-                    currentFloor = floors.get(currentElevator.travel(Math.abs(loadRequest - currentFloor.get_FloorNumber()), ));
+                } else {//someone needs to be dropped off
+                    if (loadRequest == 0) {//no pickup requests
+                        currentFloor = floors.get(currentElevator.travel(unloadRequest, floors) - 1);
+                    } else {//pickup AND drop-off requests
+                        currentFloor = floors.get(currentElevator.travel(currentElevator.closestFloor(unloadRequest, loadRequest), floors) - 1);
+                    }
                 }
-                currentElevator = elevatorIterator.next();
-                currentFloor = floors.get(currentElevator.get_CurrentFloor());
+
+                try {
+                    currentElevator = elevatorIterator.next();
+                }
+                catch (NoSuchElementException lastElevator) {
+                    break;
+                }
             }
             tickCount++;
         }
@@ -109,14 +89,18 @@ public class Simulation {
 
     private int button_pressed(List<Floor> floorList, Elevator elevator) {
         int current_floor = elevator.get_CurrentFloor();
-        ListIterator<Floor> iterator = floorList.listIterator(current_floor);
+        ListIterator<Floor> iterator = floorList.listIterator(current_floor - 1);
         Floor request;
 
         if (elevator.direction()) {
             //look up
             while (iterator.hasNext()){
                 request = iterator.next();
+                current_floor++;
                 if (!request.get_upload_requests(elevator.direction()).isEmpty()) {
+                    return request.get_FloorNumber();
+                }
+                else if (!request.get_upload_requests(!elevator.direction()).isEmpty()) {
                     return request.get_FloorNumber();
                 }
             }
@@ -127,30 +111,33 @@ public class Simulation {
                 if (!request.get_upload_requests(elevator.direction()).isEmpty()) {
                     return request.get_FloorNumber();
                 }
+                else if (!request.get_upload_requests(!elevator.direction()).isEmpty()) {
+                    return request.get_FloorNumber();
+                }
             }
         }
         return 0;
     }
 
-    public boolean spawn(HandlePropertyFile handler, List<Floor> floors) { //return if spawn was successful, 0 if no new passengers
+    public int spawn(HandlePropertyFile handler, List<Floor> floors) { //return if spawn was successful, 0 if no new passengers
         Random randomGenerator = new Random();
         ListIterator<Floor> iterator = floors.listIterator();
         Floor current = floors.get(0);
 
-        for (int floor_number = 1; floor_number <= handler.get_floors(); floor_number++) {
+        for (int floor_number = 1; floor_number < handler.get_floors(); floor_number++) {
             if (handler.get_passengers() >= randomGenerator.nextFloat()) {
                 Passenger newPassenger = new Passenger(floor_number, handler.get_floors(), getTickCount());
                 if (newPassenger.goingUp()) {
-                    current.get_upload_requests(true).add(newPassenger);
+                    current.get_upload_requests(true).add( newPassenger);
                 }
                 else {
                     current.get_upload_requests(false).add(newPassenger);
                 }
-                return true;
+                return floor_number;
             }
             current = iterator.next();
         }
-        return false;
+        return 0;
     }
 
     public List<Floor> generate_floors(HandlePropertyFile handler) {

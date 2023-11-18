@@ -1,7 +1,7 @@
 import java.util.*;
 
 public class Floor {
-    private int floorNumber; //index
+    private int floorNumber;
     private List<Passenger> UpRequest;
     private List<Passenger> DownRequest;
 

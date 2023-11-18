@@ -1,5 +1,5 @@
 import java.util.*;
-public class Passenger {
+public class Passenger implements Comparable<Passenger> {
     private int destination;
     private boolean goingUp;
     private int startTime;
@@ -19,7 +19,7 @@ public class Passenger {
         }
         int range;
         if (goingUp) {
-            range = (maxFloor - currentFloor + 1);
+            range = maxFloor - currentFloor;
             this.destination = randomNumber.nextInt(range) + currentFloor + 1;
         }
         else {
@@ -37,5 +37,10 @@ public class Passenger {
 
     public boolean goingUp() {
         return goingUp;
+    }
+
+    @Override
+    public int compareTo(Passenger o) {
+        return Integer.compare(this.destination, o.destination);
     }
 }

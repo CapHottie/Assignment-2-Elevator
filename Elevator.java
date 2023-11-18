@@ -22,25 +22,26 @@ public class Elevator {
         //upload all passengers that want to go the same direction (up/down)
         while (!is_full() && !passengers_waiting.isEmpty()) {//elevator has space AND there are passengers getting on
             Passenger onboard_passenger = passengers_waiting.get(0);
-            get_Q().offer(onboard_passenger);
+            get_passengerPQ().offer(onboard_passenger);
             passengers_waiting.remove(0);
             passengerCount++;
         }
     }
 
     public Passenger unload() {//unload() will be looped and return null if there are no more to poll in that given direction
-        if (get_Q().isEmpty()) {//guaranteed to be null, saves runtime
+        if (get_passengerPQ().isEmpty()) {//guaranteed to be null, saves runtime
             return null;
         }
-        if (get_Q().peek().get_destination() == get_CurrentFloor()) {
-            return get_Q().poll();
+        if (get_passengerPQ().peek().get_destination() == get_CurrentFloor()) {
+            passengerCount--;
+            return get_passengerPQ().poll();
         }
         return null;
     }
 
     //returns where elevator stopped
-    public int travel(int distance, List<Floor> floors) {
-        while (get_DistanceTraveled() < 5 && distance > get_DistanceTraveled()) {
+    public int travel(int destination, List<Floor> floors) {
+        while (get_DistanceTraveled() < 5 && destination != get_CurrentFloor() && stop(floors.size())) {
             if (direction()) {
                 currentFloor++;
                 distanceTraveled++;
@@ -54,9 +55,33 @@ public class Elevator {
             else {
                 currentFloor--;
                 distanceTraveled++;
+                if (!floors.get(get_CurrentFloor()).get_upload_requests(true).isEmpty()) {
+                    break;
+                }
+                else if (!floors.get(get_CurrentFloor()).get_upload_requests(false).isEmpty()) {
+                    break;
+                }
             }
         }
+        reset_distance();
         return get_CurrentFloor();
+    }
+
+    private boolean stop(int topFloor) {
+        if (get_CurrentFloor() == 1 || get_CurrentFloor() == topFloor){
+            changeDirection();
+            return false;
+        }
+        return true;
+    }
+
+    public int standby(List<Floor> floors) {
+        if (direction()) {
+            return travel(floors.size(), floors);
+        }
+        else {
+            return travel(1, floors);
+        }
     }
     public int closestFloor(int floor1, int floor2) {
         if(direction()) {
@@ -66,7 +91,7 @@ public class Elevator {
     }
     public int get_priority() {
         try {
-            return get_Q().peek().get_destination();
+            return get_passengerPQ().peek().get_destination();
         }
         catch (NullPointerException emptyQ) {
             return 0;
@@ -90,13 +115,7 @@ public class Elevator {
     public void reset_distance() {
         distanceTraveled = 0;
     }
-
-    //returns true if there are more travel requests for the current direction
-    public boolean check_requests() {
-        //return true if there are unload requests in the current direction
-        return !get_Q().isEmpty();
-    }
-    public PriorityQueue<Passenger> get_Q() {
+    public PriorityQueue<Passenger> get_passengerPQ() {
         if (direction()) {
             return QueueUp;
         }
