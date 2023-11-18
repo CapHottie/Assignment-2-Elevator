@@ -5,15 +5,13 @@ public class Elevator {
     private int currentFloor;
     private int distanceTraveled;
     private boolean goingUp;
-    private PriorityQueue<Passenger> QueueUp;
-    private PriorityQueue<Passenger> QueueDown;
+    private PriorityQueue<Passenger> unloadRequests;
     public Elevator(HandlePropertyFile handler) {
         this.capacity = handler.get_elevatorCapacity();
         this.passengerCount = 0;
         this.currentFloor = 1;
         this.goingUp = true;
-        this.QueueUp = new PriorityQueue<>(capacity);
-        this.QueueDown = new PriorityQueue<>(capacity, Collections.reverseOrder());
+        this.unloadRequests = new PriorityQueue<>(capacity);
     }
 
 
@@ -99,6 +97,12 @@ public class Elevator {
     }
     public void changeDirection() {
         goingUp = !direction();
+        //swap PQ order
+        PriorityQueue<Passenger> newPQ = new PriorityQueue<>(capacity, Collections.reverseOrder());
+        while (!get_passengerPQ().isEmpty()) {
+            newPQ.offer(get_passengerPQ().poll());
+        }
+        unloadRequests = newPQ;
     }
     public int get_CurrentFloor() {
         return currentFloor;
@@ -110,9 +114,6 @@ public class Elevator {
         distanceTraveled = 0;
     }
     public PriorityQueue<Passenger> get_passengerPQ() {
-        if (direction()) {
-            return QueueUp;
-        }
-        return QueueDown;
+        return unloadRequests;
     }
 }
