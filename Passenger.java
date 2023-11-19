@@ -17,14 +17,11 @@ public class Passenger implements Comparable<Passenger> {
         else {
             this.goingUp = randomNumber.nextBoolean();
         }
-        int range;
         if (goingUp) {
-            range = maxFloor - currentFloor;
-            this.destination = randomNumber.nextInt(range) + currentFloor + 1;
+            this.destination = randomNumber.nextInt(maxFloor - currentFloor) + currentFloor + 1;
         }
         else {
-            range = currentFloor + 1;
-            this.destination = randomNumber.nextInt(range) + 1;
+            this.destination = randomNumber.nextInt(currentFloor - 1) + 1;
         }
     }
 

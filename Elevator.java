@@ -27,12 +27,14 @@ public class Elevator {
     }
 
     public Passenger unload() {//unload() will be looped and return null if there are no more to poll in that given direction
-        if (get_passengerPQ().isEmpty()) {//guaranteed to be null, saves runtime
-            return null;
+        try {
+            if (get_passengerPQ().peek().get_destination() == get_CurrentFloor()) {
+                passengerCount--;
+                return get_passengerPQ().poll();
+            }
         }
-        if (get_passengerPQ().peek().get_destination() == get_CurrentFloor()) {
-            passengerCount--;
-            return get_passengerPQ().poll();
+        catch (NullPointerException noPassengersOffboarded) {
+            return null;
         }
         return null;
     }
@@ -41,38 +43,32 @@ public class Elevator {
     *  changes direction when top/bottom has been reached
     * cannot travel more than 5 floors
     * stops when destination reached or when there is an upload queue in that floor*/
-    public int travel(int destination, List<Floor> floors) {
-        while (get_DistanceTraveled() < 5 || destination == get_CurrentFloor()) {
-            if (direction()) {
+    public void travel(int destination, List<Floor> floors) {
+        while (get_DistanceTraveled() < 5 && destination != get_CurrentFloor()) {//destination reached or max distance traveled
+            if (direction()) { //elevator is going up, keep going up
                 currentFloor++;
-                distanceTraveled++;
             }
             else {
                 currentFloor--;
-                distanceTraveled++;
             }
-            if (stop(floors.size())) {
+            distanceTraveled++;
+            if (stop(floors.size())) {//even if it can travel more, the top/bottom floor has been reached
                 break;
             }
         }
         reset_distance();
-        return get_CurrentFloor();
     }
 
     public boolean stop(int topFloor) {
-        if ((!direction() && get_CurrentFloor() == 1 ) || (direction() && get_CurrentFloor() == topFloor)){
-            changeDirection();
-            return true;
-        }
-        return false;
+        return (!direction() && get_CurrentFloor() == 1) || (direction() && get_CurrentFloor() == topFloor);
     }
 
-    public int standby(List<Floor> floors) {
+    public void standby(List<Floor> floors) {
         if (direction()) {
-            return travel(floors.size(), floors);
+            travel(floors.size(), floors);
         }
         else {
-            return travel(1, floors);
+            travel(1, floors);
         }
     }
     public int closestFloor(int floor1, int floor2) {

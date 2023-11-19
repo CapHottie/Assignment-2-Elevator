@@ -57,10 +57,7 @@ public class HandlePropertyFile {
         if (get_elevatorCapacity() < 1) {
             return false;
         }
-        if (get_duration() < 1) {
-            return false;
-        }
-        return true;
+        return get_duration() >= 1;
 
     }
 
