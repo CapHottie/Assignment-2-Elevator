@@ -22,15 +22,12 @@ public class Floor {
         return floorNumber;
     }
 
-    public List<Passenger> get_upload_requests(boolean up) {
-        try {
-            if (up) {
-                return UpRequest;
-            }
-            return DownRequest;
+    //returns a list of passengers who are waiting to get picked up by elevator
+    // IFF passengers' direction of request is the same as the elevator's (represented by "up")
+    public List<Passenger> get_uploadRequests(boolean up) {
+        if (up) {
+            return UpRequest;
         }
-        catch (NullPointerException noPassengers) {
-            return null;
-        }
+        return DownRequest;
     }
 }
